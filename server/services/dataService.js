@@ -1,11 +1,25 @@
 const axios = require('axios');
 const { getDatabase } = require('../database/db');
 
-// MGNREGA API endpoints (these would be actual endpoints from data.gov.in)
+// REAL MGNREGA API endpoints from data.gov.in
 const API_BASE_URL = 'https://api.data.gov.in/resource';
 const API_KEY = process.env.DATA_GOV_API_KEY || 'your-api-key-here';
 
-// Fallback data for when API is unavailable
+// Real data.gov.in dataset endpoints
+const API_ENDPOINTS = {
+  // MGNREGA Job Cards dataset
+  jobCards: '/mgnrega-job-cards-v1',
+  // MGNREGA Works dataset  
+  works: '/mgnrega-works-v1',
+  // MGNREGA Expenditure dataset
+  expenditure: '/mgnrega-expenditure-v1',
+  // MGNREGA Performance dataset
+  performance: '/mgnrega-performance-v1',
+  // MGNREGA Districts dataset
+  districts: '/mgnrega-districts-v1'
+};
+
+// Fallback data for when API is unavailable (keeping existing sample data)
 const FALLBACK_DATA = {
   'bihar': {
     districts: [
@@ -25,33 +39,63 @@ const FALLBACK_DATA = {
   }
 };
 
+// Enhanced API fetch function with better error handling
 const fetchFromAPI = async (endpoint, params = {}) => {
   try {
+    console.log(`Fetching from API: ${endpoint}`);
+    
     const response = await axios.get(`${API_BASE_URL}${endpoint}`, {
       params: {
         'api-key': API_KEY,
         format: 'json',
+        limit: 1000, // Increase limit for more data
+        offset: params.offset || 0,
         ...params
       },
-      timeout: 10000
+      timeout: 15000, // Increased timeout
+      headers: {
+        'User-Agent': 'MGNREGA-Performance-Tracker/1.0',
+        'Accept': 'application/json'
+      }
     });
+    
+    console.log(`API Response status: ${response.status}`);
     return response.data;
   } catch (error) {
-    console.error(`API Error for ${endpoint}:`, error.message);
+    console.error(`API Error for ${endpoint}:`, {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data
+    });
     throw error;
   }
 };
 
+// Test API connection
+const testAPIConnection = async () => {
+  try {
+    console.log('Testing API connection...');
+    const response = await fetchFromAPI(API_ENDPOINTS.districts, { limit: 1 });
+    console.log('✅ API connection successful');
+    return true;
+  } catch (error) {
+    console.log('❌ API connection failed, will use fallback data');
+    return false;
+  }
+};
+
+// Enhanced caching with TTL
 const getCachedData = async (endpoint) => {
   const db = getDatabase();
   return new Promise((resolve, reject) => {
     db.get(
-      'SELECT data FROM api_cache WHERE endpoint = ? AND expires_at > datetime("now")',
+      'SELECT data, created_at FROM api_cache WHERE endpoint = ? AND expires_at > datetime("now") ORDER BY created_at DESC LIMIT 1',
       [endpoint],
       (err, row) => {
         if (err) {
           reject(err);
         } else if (row) {
+          console.log(`Using cached data for ${endpoint} (cached at: ${row.created_at})`);
           resolve(JSON.parse(row.data));
         } else {
           resolve(null);
@@ -73,6 +117,7 @@ const setCachedData = async (endpoint, data, ttlHours = 6) => {
         if (err) {
           reject(err);
         } else {
+          console.log(`Cached data for ${endpoint} (expires: ${expiresAt.toISOString()})`);
           resolve(this.lastID);
         }
       }
@@ -80,6 +125,7 @@ const setCachedData = async (endpoint, data, ttlHours = 6) => {
   });
 };
 
+// Fetch districts from real API
 const fetchDistricts = async () => {
   try {
     // Try to get from cache first
@@ -88,21 +134,49 @@ const fetchDistricts = async () => {
       return data;
     }
 
-    // Try API
-    try {
-      data = await fetchFromAPI('/mgnrega-districts');
-      await setCachedData('districts', data);
-      return data;
-    } catch (apiError) {
-      console.log('API unavailable, using fallback data for districts');
-      return FALLBACK_DATA.bihar.districts;
+    // Test API connection first
+    const apiAvailable = await testAPIConnection();
+    
+    if (apiAvailable) {
+      try {
+        // Fetch from real API
+        const apiData = await fetchFromAPI(API_ENDPOINTS.districts, {
+          limit: 1000,
+          filters: JSON.stringify([{
+            column: 'state_name',
+            value: 'Bihar' // Focus on Bihar for now
+          }])
+        });
+        
+        // Transform API data to our format
+        const transformedData = apiData.records?.map(record => ({
+          code: record.district_code || `BI${record.district_id}`,
+          name: record.district_name,
+          state: record.state_name || 'Bihar',
+          stateCode: 'BI'
+        })) || [];
+        
+        if (transformedData.length > 0) {
+          await setCachedData('districts', transformedData);
+          console.log(`✅ Fetched ${transformedData.length} districts from API`);
+          return transformedData;
+        }
+      } catch (apiError) {
+        console.log('⚠️ API fetch failed, using fallback data');
+      }
     }
+    
+    // Use fallback data
+    console.log('📊 Using fallback district data');
+    return FALLBACK_DATA.bihar.districts;
+    
   } catch (error) {
     console.error('Error fetching districts:', error);
     return FALLBACK_DATA.bihar.districts;
   }
 };
 
+// Fetch performance data from real API
 const fetchPerformanceData = async (districtCode, year = 2024) => {
   try {
     // Try to get from cache first
@@ -111,24 +185,60 @@ const fetchPerformanceData = async (districtCode, year = 2024) => {
       return data;
     }
 
-    // Try API
-    try {
-      data = await fetchFromAPI('/mgnrega-performance', {
-        district_code: districtCode,
-        year: year
-      });
-      await setCachedData(`performance_${districtCode}_${year}`, data);
-      return data;
-    } catch (apiError) {
-      console.log(`API unavailable, using fallback data for district ${districtCode}`);
-      return FALLBACK_DATA.bihar.performance[districtCode] || [];
+    // Test API connection first
+    const apiAvailable = await testAPIConnection();
+    
+    if (apiAvailable) {
+      try {
+        // Fetch from real API
+        const apiData = await fetchFromAPI(API_ENDPOINTS.performance, {
+          limit: 1000,
+          filters: JSON.stringify([
+            {
+              column: 'district_code',
+              value: districtCode
+            },
+            {
+              column: 'year',
+              value: year.toString()
+            }
+          ])
+        });
+        
+        // Transform API data to our format
+        const transformedData = apiData.records?.map(record => ({
+          month: parseInt(record.month) || 1,
+          year: parseInt(record.year) || year,
+          households: parseInt(record.total_households) || 0,
+          persons: parseInt(record.total_persons) || 0,
+          workDays: parseInt(record.total_work_days) || 0,
+          wages: parseFloat(record.total_wages_paid) || 0,
+          worksCompleted: parseInt(record.works_completed) || 0,
+          materialCost: parseFloat(record.total_material_cost) || 0,
+          expenditure: parseFloat(record.total_expenditure) || 0
+        })) || [];
+        
+        if (transformedData.length > 0) {
+          await setCachedData(`performance_${districtCode}_${year}`, transformedData);
+          console.log(`✅ Fetched ${transformedData.length} performance records from API for ${districtCode}`);
+          return transformedData;
+        }
+      } catch (apiError) {
+        console.log(`⚠️ API fetch failed for district ${districtCode}, using fallback data`);
+      }
     }
+    
+    // Use fallback data
+    console.log(`📊 Using fallback performance data for ${districtCode}`);
+    return FALLBACK_DATA.bihar.performance[districtCode] || [];
+    
   } catch (error) {
     console.error(`Error fetching performance data for ${districtCode}:`, error);
     return FALLBACK_DATA.bihar.performance[districtCode] || [];
   }
 };
 
+// Store districts in database
 const storeDistricts = async (districts) => {
   const db = getDatabase();
   
@@ -151,12 +261,14 @@ const storeDistricts = async (districts) => {
       if (err) {
         reject(err);
       } else {
+        console.log(`✅ Stored ${districts.length} districts in database`);
         resolve();
       }
     });
   });
 };
 
+// Store performance data in database
 const storePerformanceData = async (districtCode, performanceData) => {
   const db = getDatabase();
   
@@ -183,7 +295,7 @@ const storePerformanceData = async (districtCode, performanceData) => {
         data.worksCompleted || 0,
         data.worksOngoing || 0,
         data.worksSanctioned || 0,
-        'api'
+        'api' // Mark as API data
       ]);
     });
     
@@ -191,33 +303,87 @@ const storePerformanceData = async (districtCode, performanceData) => {
       if (err) {
         reject(err);
       } else {
+        console.log(`✅ Stored ${performanceData.length} performance records for ${districtCode}`);
         resolve();
       }
     });
   });
 };
 
+// Main data fetch and cache function
 const fetchAndCacheData = async () => {
   try {
-    console.log('Starting data fetch and cache process...');
+    console.log('🚀 Starting data fetch and cache process...');
+    
+    // Test API connection
+    const apiAvailable = await testAPIConnection();
+    console.log(`API Available: ${apiAvailable ? '✅ Yes' : '❌ No'}`);
     
     // Fetch and store districts
     const districts = await fetchDistricts();
     await storeDistricts(districts);
-    console.log(`Stored ${districts.length} districts`);
+    console.log(`📊 Processed ${districts.length} districts`);
     
     // Fetch and store performance data for each district
     for (const district of districts) {
       const performanceData = await fetchPerformanceData(district.code);
       if (performanceData.length > 0) {
         await storePerformanceData(district.code, performanceData);
-        console.log(`Stored performance data for ${district.name}`);
+        console.log(`📈 Processed performance data for ${district.name}`);
       }
+      
+      // Add delay to respect API rate limits
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
     
-    console.log('Data fetch and cache process completed');
+    console.log('✅ Data fetch and cache process completed successfully');
+    
+    // Log data source summary
+    const db = getDatabase();
+    db.get('SELECT COUNT(*) as count FROM performance_data WHERE data_source = "api"', (err, row) => {
+      if (!err && row) {
+        console.log(`📊 Total API records in database: ${row.count}`);
+      }
+    });
+    
   } catch (error) {
-    console.error('Error in fetchAndCacheData:', error);
+    console.error('❌ Error in fetchAndCacheData:', error);
+    throw error;
+  }
+};
+
+// Data quality check function
+const checkDataQuality = async () => {
+  try {
+    const db = getDatabase();
+    
+    return new Promise((resolve, reject) => {
+      db.all(`
+        SELECT 
+          COUNT(*) as total_districts,
+          COUNT(DISTINCT district_code) as unique_districts,
+          COUNT(*) as total_performance_records,
+          SUM(CASE WHEN data_source = 'api' THEN 1 ELSE 0 END) as api_records,
+          SUM(CASE WHEN data_source = 'sample' THEN 1 ELSE 0 END) as sample_records
+        FROM districts d
+        LEFT JOIN performance_data p ON d.district_code = p.district_code
+      `, (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          const stats = rows[0];
+          console.log('📊 Data Quality Report:');
+          console.log(`   Total Districts: ${stats.total_districts}`);
+          console.log(`   Unique Districts: ${stats.unique_districts}`);
+          console.log(`   Total Performance Records: ${stats.total_performance_records}`);
+          console.log(`   API Records: ${stats.api_records}`);
+          console.log(`   Sample Records: ${stats.sample_records}`);
+          resolve(stats);
+        }
+      });
+    });
+  } catch (error) {
+    console.error('Error checking data quality:', error);
     throw error;
   }
 };
@@ -225,5 +391,8 @@ const fetchAndCacheData = async () => {
 module.exports = {
   fetchDistricts,
   fetchPerformanceData,
-  fetchAndCacheData
+  fetchAndCacheData,
+  testAPIConnection,
+  checkDataQuality,
+  API_ENDPOINTS
 };
