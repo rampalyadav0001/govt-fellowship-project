@@ -16,6 +16,9 @@
   "keywords": ["mgnrega", "government", "performance", "tracking"],
   "author": "MGNREGA Performance Tracker",
   "license": "MIT",
+  "dependencies": {
+    "serverless-http": "^3.2.0"
+  },
   "devDependencies": {
     "concurrently": "^8.2.2"
   }
