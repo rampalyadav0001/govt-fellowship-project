@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, TrendingUp, Users, CheckCircle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import axios from 'axios';
+import api from '../config/api';
 import toast from 'react-hot-toast';
 
 const CompareDistricts = () => {
@@ -24,7 +24,7 @@ const CompareDistricts = () => {
 
   const fetchDistricts = async () => {
     try {
-      const response = await axios.get('/api/districts');
+      const response = await api.get('/api/districts');
       setDistricts(response.data);
     } catch (error) {
       console.error('Error fetching districts:', error);
@@ -36,7 +36,7 @@ const CompareDistricts = () => {
     try {
       setLoading(true);
       const districtCodes = selectedDistricts.join(',');
-      const response = await axios.get(`/api/compare?districts=${districtCodes}&year=${selectedYear}`);
+      const response = await api.get(`/api/compare?districts=${districtCodes}&year=${selectedYear}`);
       setComparisonData(response.data);
     } catch (error) {
       console.error('Error fetching comparison data:', error);

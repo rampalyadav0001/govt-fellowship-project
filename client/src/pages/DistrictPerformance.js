@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, TrendingUp, Users, DollarSign, CheckCircle, Calendar, MapPin } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import axios from 'axios';
+import api from '../config/api';
 import toast from 'react-hot-toast';
 
 const DistrictPerformance = () => {
@@ -24,12 +24,12 @@ const DistrictPerformance = () => {
       setLoading(true);
       
       // Fetch district summary
-      const summaryResponse = await axios.get(`/api/district/${districtCode}/summary?year=${selectedYear}`);
+      const summaryResponse = await api.get(`/api/district/${districtCode}/summary?year=${selectedYear}`);
       setDistrict(summaryResponse.data.district);
       setSummary(summaryResponse.data.summary);
       
       // Fetch monthly performance data
-      const performanceResponse = await axios.get(`/api/performance/${districtCode}?year=${selectedYear}`);
+      const performanceResponse = await api.get(`/api/performance/${districtCode}?year=${selectedYear}`);
       setPerformanceData(performanceResponse.data);
       
     } catch (error) {

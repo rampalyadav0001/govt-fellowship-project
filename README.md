@@ -2,6 +2,14 @@
 
 A production-ready web application for tracking MGNREGA district performance, designed for rural Indian citizens with low technical literacy.
 
+## 🎯 Deployment Architecture
+
+This application uses **separate deployment** for optimal performance and scalability:
+
+- **Backend API**: Deployed on **Render.com** 
+- **Frontend**: Deployed on **Vercel**
+- **Database**: SQLite with persistent storage
+
 ## Features
 
 - **User-Friendly Interface**: Designed for low-literacy rural population with visual indicators and simple navigation
@@ -13,14 +21,14 @@ A production-ready web application for tracking MGNREGA district performance, de
 
 ## Technology Stack
 
-### Frontend
+### Frontend (Vercel)
 - React 18 with modern hooks
 - React Router for navigation
 - Recharts for data visualization
 - Lucide React for icons
 - Responsive CSS with mobile-first design
 
-### Backend
+### Backend (Render)
 - Node.js with Express
 - SQLite database for easy deployment
 - Axios for API calls
@@ -34,7 +42,19 @@ A production-ready web application for tracking MGNREGA district performance, de
 - Error handling and logging
 - Health check endpoints
 
-## Installation
+## 🚀 Quick Deploy
+
+### Backend (Render.com)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/rampalyadav0001/govt-fellowship-project)
+
+### Frontend (Vercel)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/rampalyadav0001/govt-fellowship-project)
+
+## 📖 Detailed Deployment Guide
+
+See [SEPARATE-DEPLOYMENT.md](SEPARATE-DEPLOYMENT.md) for comprehensive deployment instructions.
+
+## Installation (Local Development)
 
 ### Prerequisites
 - Node.js 16+ 
@@ -44,8 +64,8 @@ A production-ready web application for tracking MGNREGA district performance, de
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
-   cd mgnrega-performance-tracker
+   git clone https://github.com/rampalyadav0001/govt-fellowship-project.git
+   cd govt-fellowship-project
    ```
 
 2. **Install dependencies**
@@ -69,66 +89,6 @@ A production-ready web application for tracking MGNREGA district performance, de
    - Backend server on http://localhost:5000
    - Frontend development server on http://localhost:3000
 
-## 🚀 Quick Deploy (Free Hosting)
-
-### Option 1: Railway (Recommended)
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/YOUR_GITHUB_USERNAME/govt-fellowship-project)
-
-### Option 2: Render
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/YOUR_GITHUB_USERNAME/govt-fellowship-project)
-
-### Option 3: Vercel
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YOUR_GITHUB_USERNAME/govt-fellowship-project)
-
-### Option 4: Netlify
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/YOUR_GITHUB_USERNAME/govt-fellowship-project)
-
-## 📖 Detailed Deployment Guide
-
-See [DEPLOYMENT.md](DEPLOYMENT.md) for comprehensive deployment instructions.
-
-## Production Deployment (VPS)
-
-### Using PM2 (Recommended)
-
-1. **Build the application**
-   ```bash
-   npm run build
-   ```
-
-2. **Install PM2 globally**
-   ```bash
-   npm install -g pm2
-   ```
-
-3. **Start with PM2**
-   ```bash
-   cd server
-   pm2 start index.js --name "mgnrega-tracker"
-   pm2 save
-   pm2 startup
-   ```
-
-### Using Docker
-
-1. **Create Dockerfile**
-   ```dockerfile
-   FROM node:18-alpine
-   WORKDIR /app
-   COPY package*.json ./
-   RUN npm install
-   COPY . .
-   RUN npm run build
-   EXPOSE 5000
-   CMD ["npm", "start"]
-   ```
-
-2. **Build and run**
-   ```bash
-   docker build -t mgnrega-tracker .
-   docker run -p 5000:5000 mgnrega-tracker
-   ```
-
 ## API Endpoints
 
 ### Public Endpoints
@@ -141,6 +101,7 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for comprehensive deployment instructions.
 ### Admin Endpoints
 - `POST /api/refresh-data` - Manually refresh data
 - `GET /health` - Health check
+- `GET /api/info` - API information
 
 ## Database Schema
 

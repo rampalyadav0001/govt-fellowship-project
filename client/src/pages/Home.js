@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, TrendingUp, Users, DollarSign, CheckCircle, ArrowRight } from 'lucide-react';
-import axios from 'axios';
+import api from '../config/api';
 import toast from 'react-hot-toast';
 
 const Home = ({ nearbyDistrict }) => {
@@ -17,7 +17,7 @@ const Home = ({ nearbyDistrict }) => {
 
   const fetchDistricts = async () => {
     try {
-      const response = await axios.get('/api/districts');
+      const response = await api.get('/api/districts');
       setDistricts(response.data);
       setLoading(false);
     } catch (error) {
@@ -29,7 +29,7 @@ const Home = ({ nearbyDistrict }) => {
 
   const fetchStateSummary = async () => {
     try {
-      const response = await axios.get('/api/state-summary');
+      const response = await api.get('/api/state-summary');
       if (response.data.length > 0) {
         setStateSummary(response.data[0]);
       }

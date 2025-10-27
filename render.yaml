@@ -1,15 +1,17 @@
 services:
   - type: web
-    name: mgnrega-tracker
+    name: mgnrega-backend
     env: node
-    buildCommand: npm run install-all && npm run build
-    startCommand: npm start
+    buildCommand: cd server && npm install
+    startCommand: cd server && npm start
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000
+      - key: DATA_GOV_API_KEY
+        value: your-data-gov-api-key-here
     disk:
       name: mgnrega-data
       mountPath: /opt/render/project/server/database

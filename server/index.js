@@ -5,7 +5,6 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 const cron = require('node-cron');
-const path = require('path');
 require('dotenv').config();
 
 const { initializeDatabase } = require('./database/db');
@@ -39,9 +38,7 @@ app.use(limiter);
 app.use(compression());
 app.use(morgan('combined'));
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://yourdomain.com'] 
-    : ['http://localhost:3000'],
+  origin: process.env.FRONTEND_URL || ['http://localhost:3000', 'https://your-frontend.vercel.app'],
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -53,21 +50,30 @@ initializeDatabase();
 // Setup routes
 setupRoutes(app);
 
-// Serve static files in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../client/build')));
-  
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
-  });
-}
-
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// API info endpoint
+app.get('/api/info', (req, res) => {
+  res.json({
+    name: 'MGNREGA Performance Tracker API',
+    version: '1.0.0',
+    description: 'Backend API for MGNREGA district performance tracking',
+    endpoints: {
+      districts: '/api/districts',
+      performance: '/api/performance/:districtCode',
+      summary: '/api/district/:districtCode/summary',
+      compare: '/api/compare',
+      stateSummary: '/api/state-summary',
+      refresh: '/api/refresh-data'
+    }
   });
 });
 
@@ -100,6 +106,7 @@ cron.schedule('0 */6 * * *', async () => {
 fetchAndCacheData().catch(console.error);
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🚀 MGNREGA Backend API running on port ${PORT}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 Health check: http://localhost:${PORT}/health`);
 });
