@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: mgnrega-tracker
+    env: node
+    buildCommand: npm run install-all && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+    disk:
+      name: mgnrega-data
+      mountPath: /opt/render/project/server/database
+      sizeGB: 1

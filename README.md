@@ -69,7 +69,25 @@ A production-ready web application for tracking MGNREGA district performance, de
    - Backend server on http://localhost:5000
    - Frontend development server on http://localhost:3000
 
-## Production Deployment
+## 🚀 Quick Deploy (Free Hosting)
+
+### Option 1: Railway (Recommended)
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/YOUR_GITHUB_USERNAME/govt-fellowship-project)
+
+### Option 2: Render
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/YOUR_GITHUB_USERNAME/govt-fellowship-project)
+
+### Option 3: Vercel
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YOUR_GITHUB_USERNAME/govt-fellowship-project)
+
+### Option 4: Netlify
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/YOUR_GITHUB_USERNAME/govt-fellowship-project)
+
+## 📖 Detailed Deployment Guide
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for comprehensive deployment instructions.
+
+## Production Deployment (VPS)
 
 ### Using PM2 (Recommended)
 

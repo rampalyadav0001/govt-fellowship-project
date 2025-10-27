@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Home, BarChart3, Users, Info } from 'lucide-react';
+import { MapPin, Home, BarChart3, Info } from 'lucide-react';
 
 const Header = ({ userLocation, nearbyDistrict }) => {
   return (
